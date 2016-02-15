@@ -45,18 +45,16 @@ double temp;
 // Template version uses only one thread, which does all the work
 // This must be changed (and the launch parameters) to exploit GPU parallelism
 // You can make any changes; only requirement is that correctness test passes
-  k = (blockIdx.y*gridDim.x+blockIdx.x)*(blockDim.x*blockDim.y)+(threadIdx.y*blockDim.x+threadIdx.x);
-  //if(threadIdx.x == 0) {
-    //for(k=0;k<n;k++){
-    if(k<n){
-      for (i=0;i<n;i++){
-        temp = B[k*N+i]; // temp = b[k][i];
-        for (j=0;j<i;j++) temp = temp - A[i*N+j] * X[k*N+j]; // temp = temp - a[i][j]*x[k][j];
-        X[k*N+i] = temp/A[i*N+i]; //x[k][i] = temp/a[i][i];
-      }
+if(threadIdx.x == 0) {
+  for(k=0;k<n;k++){
+    for (i=0;i<n;i++)
+    {
+      temp = B[k*N+i]; // temp = b[k][i];
+      for (j=0;j<i;j++) temp = temp - A[i*N+j] * X[k*N+j]; // temp = temp - a[i][j]*x[k][j];
+      X[k*N+i] = temp/A[i*N+i]; //x[k][i] = temp/a[i][i];
     }
-//  }
-// }
+  }
+ }
 }
 
 void test(void)
@@ -69,11 +67,9 @@ void test(void)
   cudaMalloc((void **) &Xd,size);
   cudaMemcpy(Ad,a,size,cudaMemcpyHostToDevice);
   cudaMemcpy(Bd,b,size,cudaMemcpyHostToDevice);
-  dim3 dimGrid(32,32);
-  dim3 dimBlock(2,2);
-  test_kernel<<<dimGrid,dimBlock>>>(n,Ad,Bd,Xd);
+  test_kernel<<<1,1>>>(n,Ad,Bd,Xd);
   cudaMemcpy(x,Xd,size,cudaMemcpyDeviceToHost);
-
+  cudaFree(Ad); cudaFree(Bd); cudaFree(Xd);
 }
 
 void ref(void)
